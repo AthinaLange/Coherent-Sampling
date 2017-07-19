@@ -59,6 +59,8 @@ random.h
 /home/athinalange/CLionProjects/Nodesv5/random.h
 functions.h
 /home/athinalange/CLionProjects/Nodesv5/functions.h
+gsl/gsl_rng.h
+-
 
 /home/athinalange/CLionProjects/Nodesv5/random.cpp
 random.h

@@ -13,6 +13,7 @@ extern PathInfoQueue_t  path_info_queue;
 extern PathDataVector_t multi_paths_data;
 
 using namespace std;
+#include <gsl/gsl_rng.h>
 
 // VARIABLES ======================================================================
 
