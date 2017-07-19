@@ -3,7 +3,6 @@
 
 
 #include "Global.h"
-#include "RandomNumberGenerator.h"
 #include "MultiPathProcessing.h"
 
 #include "random.h"
@@ -14,12 +13,11 @@ extern PathInfoQueue_t  path_info_queue;
 extern PathDataVector_t multi_paths_data;
 
 using namespace std;
-#include <gsl/gsl_rng.h>
 
 // VARIABLES ======================================================================
 
 char  datafilename[80];
-FILE   *stream;
+//FILE   *stream;
 
 const gsl_rng_type * TT;
 gsl_rng * rr;
@@ -77,15 +75,6 @@ double *mu;
 double *dtdtm;
 double TSLICE;
 double ppower;
-double abszsum0;
-double argzsum0;
-double habszsum0;
-double hargzsum0;
-
-
-int t_strobe, Nblock = 1024; /* t_strobe is the frequency at which results for slices are printed,
-                                 Nblock is the size of sub-ensembles */
-
 double alpha;
 
 double (*phi)(double*, double*);
@@ -172,16 +161,12 @@ int main() {
     TT = gsl_rng_default;
     rr = gsl_rng_alloc(TT);
 
-    // Random Number Generator
-    //unsigned long seed = 0; // fixed seed for reproducibility, otherwise use RandomState()
-   // cout << "Root Seed: " << seed << endl;
-  //  RandomState random_state = RandomState(seed); // root path
 
     // !!! Multi Paths Data
     // dimension parameters
     long n_data2D_1 = 4;
     long n_data2D_2 = N_slice;
-    long n_paths = pow(N_PATHS, (N_LEVELS+1.0)) - 1;
+    unsigned long n_paths = pow(N_PATHS, (N_LEVELS+1.0)) - 1;
 
     multi_paths_data.resize(n_paths, PathData(n_data2D_1, n_data2D_2));
     // ================================================================================================================
@@ -259,8 +244,8 @@ int main() {
 
 
     // Enqueue root path information
-    path_info_queue.emplace(PathInfo(-1, 0, S[SS0], z[SS0], 0, 0, 0/*, random_state*/));
-    // (parent_id -1 for no parent, id, level, clock, random_state)
+    path_info_queue.emplace(PathInfo(-1, 0, S[SS0], z[SS0], 0, 0, 0));
+    // (parent_id -1 for no parent, id, surface, phase, level, jump counter, clock)
 
     // SERIAL IMPLEMENTATION
     // can easily be parallelized:
@@ -286,7 +271,7 @@ int main() {
 
     // !!! OUTPUT
 
-    long path = n_paths-1; // choose any one between 0 and n_paths-1
+    //long path = n_paths-1; // choose any one between 0 and n_paths-1
 
 /*    cout << endl;
     cout << "path " << path << endl;

@@ -56,7 +56,6 @@ void dgamma(double *R){
 }
 
 void Fb(double *R){ /* Pure Bath Force Field */
-    double x;
     for (int i= 0; i < N_bath; ++i)
         f[i] = mww[i]*R[i];
 }
@@ -139,8 +138,8 @@ void bath_para(double eta, double w_max){ /* Parameters for bath (corresponding 
 }
 
 double U( double *r,double *v, int Sa, double t){ // Adiabatic Propagator
-    double  dE0, phase,dt,x1,x2,x3,v1,v2,v3;
-    int Nsteps;
+    double phase, dt;
+    double Nsteps;
 
     force[Sa](r);
     dt = timestep;

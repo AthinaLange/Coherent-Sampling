@@ -56,14 +56,10 @@ double ap1;
 double ap2;
 double ap3;
 double dn2;
-
-
-
 double prob0;
 double prob1;
 int change;
 
-complex<double> oldz;
 complex<double> I(0,1);
 
 double **abszsum1;
@@ -385,7 +381,7 @@ void process_path(PathInfo& path_info) {
         // to avoid synchronization between parallel executions of process_path().
         // lowest path id in current level
         long id_min_level = 0;
-        for (long l=0; l<path_info.level; ++l) id_min_level += pow(N_PATHS, l);
+        for (int l=0; l<path_info.level; ++l) id_min_level += pow(N_PATHS, l);
         // lowest path id in next level
         long id_min_next_level = id_min_level + pow(N_PATHS, path_info.level);
         // first path id of following paths in next level
@@ -411,10 +407,10 @@ void process_path(PathInfo& path_info) {
         for (int p = 0; p < 4; ++p){
             cout << path_id + p << endl;
             if (S[p] == SS0){
-                path_info_queue.emplace(PathInfo(path_info.id, path_id + p, S[p], z[p], path_info.level + 1, Njump, counter/*, random_state*/));
+                path_info_queue.emplace(PathInfo(path_info.id, path_id + p, S[p], z[p], path_info.level + 1, Njump, counter));
             }
             else{
-                path_info_queue.emplace(PathInfo(path_info.id, path_id + p, S[p], z[p], path_info.level + 1, Njump + 1, counter/*, random_state*/));
+                path_info_queue.emplace(PathInfo(path_info.id, path_id + p, S[p], z[p], path_info.level + 1, Njump + 1, counter));
             }
 
         }

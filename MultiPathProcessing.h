@@ -8,7 +8,6 @@
 #include <gsl/gsl_rng.h>
 
 #include "Global.h"
-#include "RandomNumberGenerator.h"
 
 using namespace std;
 
@@ -22,16 +21,15 @@ using namespace std;
 // as it adds more paths to the processing queue quicker.
 
 struct PathInfo {
-    PathInfo(long parent_id, long id, long surface, complex<double> z, long level, int Njump, long clock/*, RandomState random_state*/)
-            : parent_id(parent_id), id(id), surface(surface), probability(z), level(level), Njump(Njump), clock(clock)/*, random_state(random_state)*/ { };
+    PathInfo(long parent_id, long id, int surface, complex<double> z, long level, int Njump, int clock)
+            : parent_id(parent_id), id(id), surface(surface), probability(z), level(level), Njump(Njump), clock(clock) { };
     long parent_id;
     long id;
-    long surface;
+    int surface;
     complex<double> probability;
     long level;
     int Njump;
-    long clock;
-    RandomState random_state;
+    int clock;
 };
 
 typedef queue<PathInfo>  PathInfoQueue_t;
@@ -57,26 +55,26 @@ struct PathData {
     PathData(long n_data2D_1, long n_data2D_2) // dimension parameters of the PathData
             :n_data2D_1(n_data2D_1), n_data2D_2(n_data2D_2),
               valid(false), parent_id(-1), probability(4, (1.0, 0.0)), surface(4, 0),
-                abszsum1(n_data2D_1,vector<double>(n_data2D_2, 0.0)),
-                argzsum1(n_data2D_1,vector<double>(n_data2D_2, 0.0)),
-                habszsum1(n_data2D_1,vector<double>(n_data2D_2, 0.0)),
-                hargzsum1(n_data2D_1,vector<double>(n_data2D_2, 0.0)) { }
+                abszsum1(n_data2D_1, vector<double>(n_data2D_2, 0.0)),
+                argzsum1(n_data2D_1, vector<double>(n_data2D_2, 0.0)),
+                habszsum1(n_data2D_1, vector<double>(n_data2D_2, 0.0)),
+                hargzsum1(n_data2D_1, vector<double>(n_data2D_2, 0.0)) { }
 
     // memory is allocated using constructor initialization
     // explicit initialization of vectors with 0.0
-    bool                    valid; // identify processed paths
+    bool                     valid; // identify processed paths
     // given that N_CLOCKS is a stop criteria, not all levels might be reached
-    long                    parent_id;
-    vector<complex<double>> probability;
-    vector<double>          surface;
+    long                     parent_id;
+    vector<complex<double> > probability;
+    vector<double>           surface;
 
-    vector<vector<double>>  abszsum1;
-    vector<vector<double>>  argzsum1;
-    vector<vector<double>>  habszsum1;
-    vector<vector<double>>  hargzsum1;
+    vector<vector<double> >  abszsum1;
+    vector<vector<double> >  argzsum1;
+    vector<vector<double> >  habszsum1;
+    vector<vector<double> >  hargzsum1;
     // dimension parameters of the PathData
-    long                    n_data2D_1;
-    long                    n_data2D_2;
+    long                     n_data2D_1;
+    long                     n_data2D_2;
 };
 
 typedef vector<PathData> PathDataVector_t;
