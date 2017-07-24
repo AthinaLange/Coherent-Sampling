@@ -35,6 +35,7 @@ extern double *dhat;
 extern double *Pperp;
 extern double *R1;
 extern double *v;
+extern double *m;
 
 extern complex<double> z[4];
 extern int S[4];
@@ -147,8 +148,9 @@ void process_path(PathInfo& path_info) {
         Pdotdhat = 0;
         for (int i = 0; i < N_bath; ++i) {
             Pdotdhat += PP[i] * dhat[i]; //parallel component of dhat to momentum
+            alpha += PP[i] * dhat[i] / m[i];
         }
-        alpha = Pdotdhat * abs_d * TSLICE;
+        alpha *= abs_d * TSLICE;
 
         signPdotdhat = (Pdotdhat < 0 ? -1 : 1); // -1 if neg, 1 if pos
         Pdotdhat = fabs(Pdotdhat);

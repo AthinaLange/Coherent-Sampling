@@ -1,6 +1,6 @@
 #include <iostream>
 #include <complex>
-
+#include <fstream>
 
 #include "Global.h"
 #include "MultiPathProcessing.h"
@@ -85,6 +85,11 @@ double (*obs1[4])(double*, double*);
 
 
 extern double ranVector[10001];
+
+extern double **abszsum1;
+extern double **argzsum1;
+extern double **habszsum1;
+extern double **hargzsum1;
 
 // =============================================================================
 // Multi Path Processing Program
@@ -204,6 +209,14 @@ int main() {
     setwww();
 
 
+    // ====================================================================================
+    // 1st OUTPUT
+    // ====================================================================================
+    ofstream outputFile;
+    outputFile.open("Filename.txt");
+    outputFile << "w_max: " << w_max << ", eta: " << eta << ", beta: " << beta << ", delta: " << delta << ", ppower: " << ppower << ", N_bath: " << N_bath << ", N_slice: " << N_slice << endl;
+    outputFile.close();
+
 
     // ================================================================================================================
     // Processing Path Segments
@@ -292,6 +305,20 @@ int main() {
     // When implemented as C-style dynamic memory (malloc, free) or
     // C++-style dynamic memory (new, delete []),
     // memory needs to be de-allocated explicitly here.
+
+    // ===============================================================
+    // 3rd OUTPUT
+    // ===============================================================
+    outputFile.open("Filename.txt");
+    outputFile << "timestep: " << timestep << ", T: " << T << ", Nsample: " << Nsample << endl;
+    for (int i = 0; i < N_slice; ++i){
+        for (int j = 0; j < N_slice; ++j){
+            outputFile << "Njump: " << i << ", Time: " << j << ", " << TSLICE*(i+1) <<", abs: " << abszsum1[i][j] << ", arg: " << argzsum1[i][j] << ", habs: " << habszsum1[i][j] <<", harg: " << hargzsum1[i][j] << endl;
+            cout << "Njump: " << i << ", Time: " << j << ", " << TSLICE*(i+1) << ", abs: " << abszsum1[i][j] << ", arg: " << argzsum1[i][j] << ", habs: " << habszsum1[i][j] <<", harg: " << hargzsum1[i][j] << endl;
+        }
+    }
+    outputFile.close();
+
 
     // ===============================================================
     // Memory Deallocation
