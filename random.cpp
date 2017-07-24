@@ -1,6 +1,6 @@
 #include "random.h"
 using namespace std;
-
+#include <gsl/gsl_rng.h>
 
 #define PI 3.141592653589793
 
@@ -11,7 +11,11 @@ extern double *sig;
 
 double ranVector[10001];
 
-/* Random number stuff ***************************************************************  */
+
+
+///////////////////////////////////////////////////////////////////////////////
+/// RANDOM NUMBER GENERATOR
+///////////////////////////////////////////////////////////////////////////////
 
 
 double  gauss1(double sigma_x, int i){
@@ -35,9 +39,8 @@ void randnums(int rand_dim, double *rand_vec){
     }
 }
 
-void gauss_init_W(double *R, double *v){
+void gauss_init_W(double *R, double *v){ /*!< Gaussian number generator  for (R,P) */
     double sigma_x, sigma_v;
-    /* Gaussian number generator  for (R,P) */
 
     randnums(4*N_bath, ranVector);
     for (int i = 0; i < N_bath; ++i){

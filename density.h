@@ -1,6 +1,5 @@
-#ifndef RANDOM
-#define RANDOM 
-
+#ifndef DENSITY
+#define DENSITY
 
 #include <complex>
 #include <vector>
@@ -8,7 +7,9 @@
 #include <math.h>
 #include <stdio.h>
 #include <iostream>
+#include "random.h"
+#include "functions.h"
 
-void gauss_init_W(double *R, double *v);
+int density(double *x,double *p);
 
 #endif
