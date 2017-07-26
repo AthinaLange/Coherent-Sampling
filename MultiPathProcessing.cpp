@@ -62,11 +62,14 @@ double prob1;
 int change;
 
 complex<double> I(0,1);
+extern complex<double> initd;
 
-double **abszsum1;
-double **argzsum1;
-double **habszsum1;
-double **hargzsum1;
+extern double *abszsum1;
+extern double *argzsum1;
+extern double *habszsum1;
+extern double *hargzsum1;
+
+
 
 
 // =============================================================================
@@ -75,22 +78,7 @@ double **hargzsum1;
 
 void process_path(PathInfo& path_info) {
 
-    abszsum1 = new double*[N_PATHS];
-    argzsum1 = new double*[N_PATHS];
-    habszsum1 = new double*[N_PATHS];
-    hargzsum1 = new double*[N_PATHS];
     for (int i = 0; i < N_PATHS; ++i){
-        abszsum1[i] = new double[N_slice];
-        argzsum1[i] = new double[N_slice];
-        habszsum1[i] = new double[N_slice];
-        hargzsum1[i] = new double[N_slice];
-        for (int j = 0; j < N_slice; ++j){
-            abszsum1[i][j] = 0.0;
-            argzsum1[i][j] = 0.0;
-            habszsum1[i][j] = 0.0;
-            hargzsum1[i][j] = 0.0;
-        }
-
         if (i == path_info.surface){
             z[i]=path_info.probability;
         }
@@ -128,17 +116,17 @@ void process_path(PathInfo& path_info) {
 
         cout << "Counter: " << counter << endl;
 
-        cout << "Starting z" << endl;
+        //cout << "Starting z" << endl;
         for (int i = 0; i < N_PATHS;++i){
-            cout << z[i] << endl;
+         //   cout << z[i] << endl;
         }
         // Trotter-Suziki Approx. from exp(iLd/2) =========================================
         phase0 = U(RR, PP, SS0, TSLICE*0.5);
         z[SS0] *= exp(I * phase0);
 
-        cout << "1st propogator: surface: " << SS0 << endl;
+       // cout << "1st propogator: surface: " << SS0 << endl;
         for (int i = 0; i < N_PATHS;++i){
-            cout << z[i] << endl;
+          //  cout << z[i] << endl;
         }
 
         // Trotter-Suziki Approx. from exp(iJd) ===========================================
@@ -169,7 +157,7 @@ void process_path(PathInfo& path_info) {
         double xx = dn2 * (gsl_rng_uniform(rr));   // choosing matrix elements
         //alpha goes to 0, pdotdhat very small, matrix becomes identiy and prob of jumping goes to 0
 
-        cout << "Prob:" << "ap0: " << ap0 <<" ap1: "<< ap1 <<" ap2: " << ap2 <<" ap3: "<< ap3 << endl;
+        //cout << "Prob:" << "ap0: " << ap0 <<" ap1: "<< ap1 <<" ap2: " << ap2 <<" ap3: "<< ap3 << endl;
         SS2 = SS0;
 
         // Probability Weighting ==============================================
@@ -198,7 +186,7 @@ void process_path(PathInfo& path_info) {
 
         if (xx < prob0){
             SS1 = SS0;
-            cout << "Propogating Adiabatically" << endl;
+           // cout << "Propogating Adiabatically" << endl;
             S[SS1] = SS1;
             if (SS1 == 0){
                 z[SS1] *= p0;
@@ -212,9 +200,9 @@ void process_path(PathInfo& path_info) {
             else {
                 z[SS1] *= p3;
             }
-            cout << "after jump propogator: SS1: " << SS1 << endl;
+           // cout << "after jump propogator: SS1: " << SS1 << endl;
             for (int i = 0; i < N_PATHS;++i){
-                cout << z[i] << endl;
+            //    cout << z[i] << endl;
             }
             path_info.surface = SS1;
 
@@ -227,23 +215,24 @@ void process_path(PathInfo& path_info) {
             // Trotter-Suziki Approx. from exp(iLd/2) =============================
             phase0 = U(RR,PP,SS1,TSLICE*0.5); // exp(iLd/2) (after jump)
             z[SS1] *= exp(I*phase0);
-            cout << "after 3rd propogator: " << endl;
+           // cout << "after 3rd propogator: " << endl;
             for (int i = 0; i < N_PATHS;++i){
-                cout << z[i] << endl;
+           //     cout << z[i] << endl;
             }
          /*   for (int i = 0; i < N_PATHS; ++i){
                 cout << "Probabilities for each surface "<< i << ": " << z[i] << endl;
             }*/
             // Calculating new phase space points =================================
             phi = obs[SS1];
-            abszsum1[SS1][counter]  = real(z[SS1]*phi(RR,PP)*dens_init[SS3](R1,v));
-            argzsum1[SS1][counter]  = imag(z[SS1]*phi(RR,PP)*dens_init[SS3](R1,v));
+            abszsum1[counter]  += real(z[SS1]*phi(RR,PP)*initd);
+            argzsum1[counter]  += imag(z[SS1]*phi(RR,PP)*initd);
 
             phi = obs1[SS1];
-            habszsum1[SS1][counter]  = real(z[SS1]*phi(RR,PP)*dens_init[SS3](R1,v));
-            hargzsum1[SS1][counter]  = imag(z[SS1]*phi(RR,PP)*dens_init[SS3](R1,v));
+            habszsum1[counter]  += real(z[SS1]*phi(RR,PP)*initd);
+            hargzsum1[counter]  += imag(z[SS1]*phi(RR,PP)*initd);
             cout << endl;
-        }
+
+            }
 
 
             // ========================================================================
@@ -252,8 +241,8 @@ void process_path(PathInfo& path_info) {
         else{
             change = 1; // Has changed surface
             Njump++;
-            cout << "Jump Possible" << endl;
-            cout << "Propability Adiabatic: " << prob0 << ", Probability Jump: " << prob1 << endl;
+           // cout << "Jump Possible" << endl;
+          //  cout << "Propability Adiabatic: " << prob0 << ", Probability Jump: " << prob1 << endl;
 
             if (SS0 == 0){
                 S[0] = 0;
@@ -295,9 +284,9 @@ void process_path(PathInfo& path_info) {
                 z[2] *= p2/prob1;
                 z[3] *= p3;
             }
-            cout << "after jump propogator" << endl;
+           // cout << "after jump propogator" << endl;
             for (int i = 0; i < N_PATHS;++i){
-                cout << z[i] << endl;
+            //    cout << z[i] << endl;
             }
 
         /*    for (int k = 0; k < N_PATHS; ++k){
@@ -305,7 +294,7 @@ void process_path(PathInfo& path_info) {
             }*/
             // need to fix probabilities index
 
-            cout << "after 3rd propogator" << endl;
+         //   cout << "after 3rd propogator" << endl;
             for (int i = 0; i < N_PATHS; ++i) {
                 if (www[1][SS0][S[i]]() != 9999.0){
                     for (int j = 0; j < N_bath; ++j){
@@ -318,18 +307,15 @@ void process_path(PathInfo& path_info) {
                 z[S[i]] *= exp(I * phase0);
 
 
-                cout << z[i] << endl;
-
                 // Calculating new phase space points =================================
-                phi = obs[S[i]];
-                abszsum1[S[i]][counter] = real(z[S[i]] * phi(RR, PP) * dens_init[SS3](R1, v));
-                argzsum1[S[i]][counter] = imag(z[S[i]] * phi(RR, PP) * dens_init[SS3](R1, v));
+                phi = obs[SS1];
+                abszsum1[counter]  += real(z[SS1]*phi(RR,PP)*initd);
+                argzsum1[counter]  += imag(z[SS1]*phi(RR,PP)*initd);
 
-
-                phi = obs1[S[i]];
-                habszsum1[S[i]][counter] = real(z[S[i]] * phi(RR, PP) * dens_init[SS3](R1, v));
-                hargzsum1[S[i]][counter] = imag(z[S[i]] * phi(RR, PP) * dens_init[SS3](R1, v));
-            }
+                phi = obs1[SS1];
+                habszsum1[counter]  += real(z[SS1]*phi(RR,PP)*initd);
+                hargzsum1[counter]  += imag(z[SS1]*phi(RR,PP)*initd);
+                }
             counter++;
             break;
         }
@@ -338,6 +324,7 @@ void process_path(PathInfo& path_info) {
     } ;
 
     // =======================================================================================================
+
 
     // Write PathData
     cout << "writing" << endl;
@@ -354,27 +341,11 @@ void process_path(PathInfo& path_info) {
     /* for (long i=0; i< multi_paths_data[path_info.id].n_data1D; ++i) {
          multi_paths_data[path_info.id].data1D[i] = path_info.id;
      }*/
-    for (int i = 0; i < multi_paths_data[path_info.id].n_data2D_2; ++i) {
-        multi_paths_data[path_info.id].abszsum1[0][i] = abszsum1[0][i];
-        multi_paths_data[path_info.id].argzsum1[0][i] = argzsum1[0][i];
-        multi_paths_data[path_info.id].habszsum1[0][i] = habszsum1[0][i];
-        multi_paths_data[path_info.id].hargzsum1[0][i] = hargzsum1[0][i];
-
-        multi_paths_data[path_info.id].abszsum1[1][i] = abszsum1[1][i];
-        multi_paths_data[path_info.id].argzsum1[1][i] = argzsum1[1][i];
-        multi_paths_data[path_info.id].habszsum1[1][i] = habszsum1[1][i];
-        multi_paths_data[path_info.id].hargzsum1[1][i] = hargzsum1[1][i];
-
-        multi_paths_data[path_info.id].abszsum1[2][i] = abszsum1[2][i];
-        multi_paths_data[path_info.id].argzsum1[2][i] = argzsum1[2][i];
-        multi_paths_data[path_info.id].habszsum1[2][i] = habszsum1[2][i];
-        multi_paths_data[path_info.id].hargzsum1[2][i] = hargzsum1[2][i];
-
-        multi_paths_data[path_info.id].abszsum1[3][i] = abszsum1[3][i];
-        multi_paths_data[path_info.id].argzsum1[3][i] = argzsum1[3][i];
-        multi_paths_data[path_info.id].habszsum1[3][i] = habszsum1[3][i];
-        multi_paths_data[path_info.id].hargzsum1[3][i] = hargzsum1[3][i];
-
+    for (int i = 0; i < N_slice; ++i) {
+        multi_paths_data[path_info.id].abszsum1[i] = abszsum1[i];
+        multi_paths_data[path_info.id].argzsum1[i] = argzsum1[i];
+        multi_paths_data[path_info.id].habszsum1[i] = habszsum1[i];
+        multi_paths_data[path_info.id].hargzsum1[i] = hargzsum1[i];
     }
 
     if ((path_info.Njump < N_JUMPS) &&  (counter < N_slice)) {
@@ -406,7 +377,7 @@ void process_path(PathInfo& path_info) {
         //path_info_queue.emplace(PathInfo(path_info.id, path_id + (N_PATHS-1), path_info.level+1, Njump, counter, path_info.random_state));
         // (parent_id, id, level, clock, random_state)
         cout << "Children paths created:"<< endl;
-        for (int p = 0; p < 4; ++p){
+        for (int p = 0; p < N_PATHS; ++p){
             cout << path_id + p << endl;
             if (S[p] == SS0){
                 path_info_queue.emplace(PathInfo(path_info.id, path_id + p, S[p], z[p], path_info.level + 1, Njump, counter));
@@ -418,16 +389,8 @@ void process_path(PathInfo& path_info) {
         }
     }
 
-    for (int j = 0; j < N_PATHS; ++j){
-        delete [] abszsum1[j];
-        delete [] argzsum1[j];
-        delete [] habszsum1[j];
-        delete [] hargzsum1[j];
-    }
-    delete [] abszsum1;
-    delete [] argzsum1;
-    delete [] habszsum1;
-    delete [] hargzsum1;
+
+
 
 
 }

@@ -6,8 +6,8 @@
 // =============================================================================
 
 const int N_PATHS  = 4;
-const int N_LEVELS = 2;
-const int N_CLOCKS = 20;
-const int N_JUMPS = 4;
+const int N_LEVELS = 4;
+const int N_CLOCKS = 15;
+const int N_JUMPS = 5;
 
 #endif

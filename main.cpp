@@ -67,6 +67,7 @@ int SS2;
 int SS3;
 int counter;
 complex<double> z[4] = {{1.0, 1.0}, {1.0, 1.0}, {1.0, 1.0}, {1.0, 1.0}};
+complex<double> initd(0,0);
 int S[4] = {0,0,0,0};
 
 double *Pperp;
@@ -86,10 +87,10 @@ double (*obs1[4])(double*, double*);
 
 extern double ranVector[10001];
 
-extern double **abszsum1;
-extern double **argzsum1;
-extern double **habszsum1;
-extern double **hargzsum1;
+double *abszsum1;
+double *argzsum1;
+double *habszsum1;
+double *hargzsum1;
 
 // =============================================================================
 // Multi Path Processing Program
@@ -170,11 +171,12 @@ int main() {
 
     // !!! Multi Paths Data
     // dimension parameters
-    long n_data2D_1 = 4;
-    long n_data2D_2 = N_slice;
+    long n_data1D= N_slice;
     unsigned long n_paths = pow(N_PATHS, (N_LEVELS+1.0)) - 1;
+    cout << "max no. of paths " << n_paths << endl;
 
-    multi_paths_data.resize(n_paths, PathData(n_data2D_1, n_data2D_2));
+
+    multi_paths_data.resize(n_paths, PathData(n_data1D));
     // ================================================================================================================
     // Initialization Values
     // ================================================================================================================
@@ -207,6 +209,18 @@ int main() {
     force[2] = Fb;
     force[3] = F2;
     setwww();
+
+    abszsum1 = new double[N_slice];
+    argzsum1 = new double[N_slice];
+    habszsum1 = new double[N_slice];
+    hargzsum1 = new double[N_slice];
+    for (int i = 0; i < N_slice; ++i) {
+        abszsum1[i] = 0.0;
+        argzsum1[i] = 0.0;
+        habszsum1[i] = 0.0;
+        hargzsum1[i] = 0.0;
+
+    }
 
 
     // ====================================================================================
@@ -255,7 +269,7 @@ int main() {
     SS1 = SS0;
     S[SS0] = SS1;
     counter = 0;
-
+    initd = dens_init[SS3](R1,v);
 
     // Enqueue root path information
     path_info_queue.emplace(PathInfo(-1, 0, S[SS0], z[SS0], 0, 0, 0));
@@ -275,7 +289,7 @@ int main() {
         // [10,11,12, 5,6,7,8, 17,18,19,20, 13,14,15,16] 1,4,3 finished -> 10,11,12 on free cores, 4 cores: [10,9,11,12]
         // ...
 
-        // Dequeue path informatio
+        // Dequeue path information
         PathInfo path_info = path_info_queue.front();
         path_info_queue.pop();
 
@@ -299,8 +313,15 @@ int main() {
         for (long j=0; j < multi_paths_data[path].n_data2D_2; ++j) {
             cout << "multi_paths_data[" << path << "].data2D[" << i << "][" << j << "]: " << multi_paths_data[path].data2D[i][j] << endl;
         }
-    }
-*/
+    }*/
+ /*       for (int i = 0; i < n_paths; ++i) {
+        multi_paths_data[path_info.id].abszsum1[i] = abszsum1[i];
+        multi_paths_data[path_info.id].argzsum1[i] = argzsum1[i];
+        multi_paths_data[path_info.id].habszsum1[i] = habszsum1[i];
+        multi_paths_data[path_info.id].hargzsum1[i] = hargzsum1[i];
+    }*/
+
+
     // !!! Multi Paths Data
     // When implemented as C-style dynamic memory (malloc, free) or
     // C++-style dynamic memory (new, delete []),
@@ -312,10 +333,9 @@ int main() {
     outputFile.open("Filename.txt");
     outputFile << "timestep: " << timestep << ", T: " << T << ", Nsample: " << Nsample << endl;
     for (int i = 0; i < N_slice; ++i){
-        for (int j = 0; j < N_slice; ++j){
-            outputFile << "Njump: " << i << ", Time: " << j << ", " << TSLICE*(i+1) <<", abs: " << abszsum1[i][j] << ", arg: " << argzsum1[i][j] << ", habs: " << habszsum1[i][j] <<", harg: " << hargzsum1[i][j] << endl;
-            cout << "Njump: " << i << ", Time: " << j << ", " << TSLICE*(i+1) << ", abs: " << abszsum1[i][j] << ", arg: " << argzsum1[i][j] << ", habs: " << habszsum1[i][j] <<", harg: " << hargzsum1[i][j] << endl;
-        }
+        outputFile << "Njump: " << i <<  ", " << TSLICE*(i+1) <<"     " << abszsum1[i] << "   " << argzsum1[i] << "   " << habszsum1[i] <<"   " << hargzsum1[i] << endl;
+        cout << "Njump: " << i <<  ", " << TSLICE*(i+1) << "     " << abszsum1[i] << "   " << argzsum1[i] << "   " << habszsum1[i] <<"   " << hargzsum1[i] << endl;
+
     }
     outputFile.close();
 
@@ -339,6 +359,10 @@ int main() {
     delete [] PP;
     delete [] Pperp;
 
+    delete [] abszsum1;
+    delete [] argzsum1;
+    delete [] habszsum1;
+    delete [] hargzsum1;
 
     return 0;
 }

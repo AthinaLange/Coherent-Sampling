@@ -52,13 +52,13 @@ typedef queue<PathInfo>  PathInfoQueue_t;
 // that the PathData for each path has the same dimension.
 
 struct PathData {
-    PathData(long n_data2D_1, long n_data2D_2) // dimension parameters of the PathData
-            :n_data2D_1(n_data2D_1), n_data2D_2(n_data2D_2),
+    PathData(long n_data1D) // dimension parameters of the PathData
+            :n_data1D(n_data1D),
               valid(false), parent_id(-1), probability(4, (1.0, 0.0)), surface(4, 0),
-                abszsum1(n_data2D_1, vector<double>(n_data2D_2, 0.0)),
-                argzsum1(n_data2D_1, vector<double>(n_data2D_2, 0.0)),
-                habszsum1(n_data2D_1, vector<double>(n_data2D_2, 0.0)),
-                hargzsum1(n_data2D_1, vector<double>(n_data2D_2, 0.0)) { }
+                abszsum1(n_data1D, 0.0),
+                argzsum1(n_data1D, 0.0),
+                habszsum1(n_data1D, 0.0),
+                hargzsum1(n_data1D, 0.0) { }
 
     // memory is allocated using constructor initialization
     // explicit initialization of vectors with 0.0
@@ -67,14 +67,12 @@ struct PathData {
     long                     parent_id;
     vector<complex<double> > probability;
     vector<double>           surface;
-
-    vector<vector<double> >  abszsum1;
-    vector<vector<double> >  argzsum1;
-    vector<vector<double> >  habszsum1;
-    vector<vector<double> >  hargzsum1;
+    vector<double>          abszsum1;
+    vector<double>          argzsum1;
+    vector<double>          habszsum1;
+    vector<double>          hargzsum1;
     // dimension parameters of the PathData
-    long                     n_data2D_1;
-    long                     n_data2D_2;
+    long                    n_data1D;
 };
 
 typedef vector<PathData> PathDataVector_t;
