@@ -2,9 +2,9 @@
 
 using namespace std;
 
-// =========================================================================
-// VARIABLES
-// =========================================================================
+///////////////////////////////////////////////////////////////////////////////
+/// VARIABLES
+///////////////////////////////////////////////////////////////////////////////
 
 extern int N_bath;
 extern double ddd;
@@ -13,25 +13,20 @@ extern double delta;
 extern double abs_d;
 extern double timestep;
 extern double *dgam;
-extern double *dhat;
 extern double *mww;
 extern double *f;
 extern double *c;
 extern double *m;
 extern double *w;
 
-extern double cosa;
-extern double sina;
-extern double Pdotdhat;
-extern double de;
 
-extern double (* www[2][4][4])();
+extern double (*www[2][4][4])(double cosa, double sina, double de, double Pdotdhat);
 
 extern void (*force[4])(double *);
 
-// =========================================================================
-// FUNCTIONS
-// =========================================================================
+///////////////////////////////////////////////////////////////////////////////
+/// FUNCTIONS
+///////////////////////////////////////////////////////////////////////////////
 
 double gam(double *R){
     double x = 0.0;
@@ -43,33 +38,39 @@ double gam(double *R){
     return -x;
 }
 
-double Hb(double *R, double *P){ /* Bath Hamiltonian */
+/*! Bath Hamiltonian */
+double Hb(double *R, double *P){
     double x = 0.0;
     for (int i = 0; i < N_bath; ++i)
         x += P[i]*P[i] - mww[i]*R[i]*R[i];
     return x*0.5;
 }
 
+/*! Derivative of gam */
 void dgamma(double *R){
     for (int i = 0; i < N_bath; ++i)
         dgam[i] = -c[i];
 }
 
-void Fb(double *R){ /* Pure Bath Force Field */
+/*! Pure Bath Force Field */
+void Fb(double *R){
+    double x;
     for (int i= 0; i < N_bath; ++i)
         f[i] = mww[i]*R[i];
 }
 
-void F1(double *R){ /* 00 force field   */
+/*! 00 force field */
+void F1(double *R){
     double g,h;
     g = gam(R);
     h = g/sqrt(ddd4 + g*g);
     for (int i = 0; i < N_bath; ++i){
-        f[i]  = mww[i]*R[i] -  h*c[i];
+        f[i]  = mww[i]*R[i] - h*c[i];
     }
 }
 
-void F2(double *R){ /* 11 force field */
+/*! 11 force field */
+void F2(double *R){
     double g,h;
     g = gam(R);
     h = g/sqrt(ddd4 + g*g);
@@ -77,12 +78,14 @@ void F2(double *R){ /* 11 force field */
         f[i] = mww[i]*R[i] + h*c[i];
 }
 
-double dE(double *R){ /* Energy difference between adibiatic surface (E1 - E0) */
+/*! Energy difference between adiabatic surface (E1 - E0) */
+double dE(double *R){
     double g;
     g = gam(R);
     g *= 4.0*g;
     return (sqrt(ddd + g));
 }
+
 
 double G(double *R){
     double x,g;
@@ -93,7 +96,8 @@ double G(double *R){
     return x;
 }
 
-void dd(double*R){
+/*! Energy */
+void dd(double *dhat, double *R){
     double x1,x2,x3;
     int i;
     x2 = gam(R);
@@ -114,7 +118,8 @@ void dd(double*R){
         dhat[i] /= abs_d;
 }
 
-void integ_step(double *r, double *v, double dt, int Sa){ // Velocity Verlet
+/*! Velocity Verlet */
+void integ_step(double *r, double *v, double dt, int Sa){
     double y;
     y = 0.5*dt*dt;
     for (int i = 0; i < N_bath; ++i)
@@ -127,7 +132,8 @@ void integ_step(double *r, double *v, double dt, int Sa){ // Velocity Verlet
         v[i] += y*f[i];
 }
 
-void bath_para(double eta, double w_max){ /* Parameters for bath (corresponding to an ohmic spectral density) */
+/*! Parameters for bath (corresponding to an ohmic spectral density) */
+void bath_para(double eta, double w_max){
     double w_0;
     w_0 = (1 - exp(-w_max))/N_bath;
     for (int i = 0; i < N_bath; ++i){
@@ -137,9 +143,10 @@ void bath_para(double eta, double w_max){ /* Parameters for bath (corresponding 
     }
 }
 
-double U( double *r,double *v, int Sa, double t){ // Adiabatic Propagator
-    double phase, dt;
-    double Nsteps;
+/*! Adiabatic Propagator */
+double U( double *r,double *v, int Sa, double t){
+    double  dE0, phase,dt,x1,x2,x3,v1,v2,v3;
+    int Nsteps;
 
     force[Sa](r);
     dt = timestep;
@@ -173,103 +180,105 @@ double U( double *r,double *v, int Sa, double t){ // Adiabatic Propagator
     return phase;
 }
 
-// TRANSITION MATRIX ===========================================================
+///////////////////////////////////////////////////////////////////////////////
+/// TRANSITION MATRIX
+///////////////////////////////////////////////////////////////////////////////
 
 
 /* Q1 */
 
 
-double wwa0_00(){
+double wwa0_00(double cosa, double sina, double de, double Pdotdhat){
     double x;
     x = 1 + cosa;
     return x*0.5;
 }
 
-double wwa0_01(){
+double wwa0_01(double cosa, double sina, double de, double Pdotdhat){
     double x;
     x = -sina;
     return x*0.5;
 }
 
-double wwa0_02(){
+double wwa0_02(double cosa, double sina, double de, double Pdotdhat){
     double x;
     x = -sina;
     return x*0.5;
 }
 
-double wwa0_03(){
+double wwa0_03(double cosa, double sina, double de, double Pdotdhat){
     double x;
     x = 1.0 - cosa;
     return x*0.5;
 }
 
-double wwa0_10(){
+double wwa0_10(double cosa, double sina, double de, double Pdotdhat){
     double x;
     x = sina;
     return x*0.5;
 }
 
-double wwa0_11(){
+double wwa0_11(double cosa, double sina, double de, double Pdotdhat){
     double x;
     x = 1.0 + cosa;
     return x*0.5;
 }
 
-double wwa0_12(){
+double wwa0_12(double cosa, double sina, double de, double Pdotdhat){
     double x;
     x = -1.0 + cosa;
     return x*0.5;
 }
 
-double wwa0_13(){
+double wwa0_13(double cosa, double sina, double de, double Pdotdhat){
     double x;
     x = -sina;
     return x*0.5;
 }
 
-double wwa0_20(){
+double wwa0_20(double cosa, double sina, double de, double Pdotdhat){
     double x;
     x = sina;
     return x*0.5;
 }
 
-double wwa0_21(){
+double wwa0_21(double cosa, double sina, double de, double Pdotdhat){
     double x;
     x = -1.0 + cosa ;
     return x*0.5;
 }
 
-double wwa0_22(){
+double wwa0_22(double cosa, double sina, double de, double Pdotdhat){
     double x;
     x = 1.0 + cosa;
     return x*0.5;
 }
 
-double wwa0_23(){
+double wwa0_23(double cosa, double sina, double de, double Pdotdhat){
     double x;
     x = -sina ;
     return x*0.5;
 }
 
-double wwa0_30(){
+double wwa0_30(double cosa, double sina, double de, double Pdotdhat){
     double x;
     x = 1 - cosa;
     return x*0.5;
 }
 
-double wwa0_31(){
+double wwa0_31(double cosa, double sina, double de, double Pdotdhat){
     double x;
     x =  sina;
     return x*0.5;
 }
 
-double wwa0_32(){
+double wwa0_32(double cosa, double sina, double de, double Pdotdhat){
     double x;
     x = sina;
     return x*0.5;
 }
 
-double wwa0_33(){
+double wwa0_33(double cosa, double sina, double de, double Pdotdhat){
     double x;
     x = 1 + cosa;
     return x*0.5;
@@ -279,11 +288,11 @@ double wwa0_33(){
 
 /* _____________________________________________  */
 
-double wwa1_00(){
+double wwa1_00(double cosa, double sina, double de, double Pdotdhat){
     return 9999.0;
 }
 
-double wwa1_01(){
+double wwa1_01(double cosa, double sina, double de, double Pdotdhat){
     double x;
     x = Pdotdhat*Pdotdhat - de;
     if (x <= 0)
@@ -292,7 +301,7 @@ double wwa1_01(){
         return sqrt(x);
 }
 
-double wwa1_02(){
+double wwa1_02(double cosa, double sina, double de, double Pdotdhat){
     double x;
     x = Pdotdhat*Pdotdhat - de;
     if (x <= 0)
@@ -301,7 +310,7 @@ double wwa1_02(){
         return sqrt(x);
 }
 
-double wwa1_03(){
+double wwa1_03(double cosa, double sina, double de, double Pdotdhat){
     double x;
     x = Pdotdhat*Pdotdhat - 2.0*de;
     if (x <= 0)
@@ -310,21 +319,21 @@ double wwa1_03(){
         return sqrt(x);
 }
 
-double wwa1_10(){
+double wwa1_10(double cosa, double sina, double de, double Pdotdhat){
     double x;
     x = Pdotdhat*Pdotdhat + de;
     return sqrt(x);
 }
 
-double wwa1_11(){
+double wwa1_11(double cosa, double sina, double de, double Pdotdhat){
     return 9999.0;
 }
 
-double wwa1_12(){
+double wwa1_12(double cosa, double sina, double de, double Pdotdhat){
     return 9999.0;
 }
 
-double wwa1_13(){
+double wwa1_13(double cosa, double sina, double de, double Pdotdhat){
     double x;
     x = Pdotdhat*Pdotdhat - de;
     if (x <= 0)
@@ -333,22 +342,22 @@ double wwa1_13(){
         return sqrt(x);
 }
 
-double wwa1_20(){
+double wwa1_20(double cosa, double sina, double de, double Pdotdhat){
     double x;
     x = Pdotdhat*Pdotdhat + de;
     return sqrt(x);
 }
 
-double wwa1_21(){
+double wwa1_21(double cosa, double sina, double de, double Pdotdhat){
     return 9999.0;
 
 }
 
-double wwa1_22(){
+double wwa1_22(double cosa, double sina, double de, double Pdotdhat){
     return 9999.0;
 }
 
-double wwa1_23(){
+double wwa1_23(double cosa, double sina, double de, double Pdotdhat){
     double x;
     x = Pdotdhat*Pdotdhat - de;
     if (x <= 0)
@@ -357,28 +366,29 @@ double wwa1_23(){
         return sqrt(x);
 }
 
-double wwa1_30(){
+double wwa1_30(double cosa, double sina, double de, double Pdotdhat){
     double x;
     x = Pdotdhat*Pdotdhat + 2.0*de;
     return sqrt(x);
 }
 
-double wwa1_31(){
+double wwa1_31(double cosa, double sina, double de, double Pdotdhat){
     double x;
     x = Pdotdhat*Pdotdhat + de;
     return sqrt(x);
 }
 
-double wwa1_32(){
+double wwa1_32(double cosa, double sina, double de, double Pdotdhat){
     double x;
     x = Pdotdhat*Pdotdhat + de;
     return sqrt(x);
 }
 
-double wwa1_33(){
+double wwa1_33(double cosa, double sina, double de, double Pdotdhat){
     return 9999.0;
 }
 
+/*! Non-adiabatic Coupling Matrix */
 void setwww(){
 
     // W_{a0}
@@ -424,16 +434,16 @@ void setwww(){
 
 /* ______________________________________   */
 
-/* ************** Observables and initial density Matrices *********  */
-
-
-/* Definition of initial density matrix element */
+///////////////////////////////////////////////////////////////////////////////
+/// Observables and initial density Matrices
+///////////////////////////////////////////////////////////////////////////////
 
 
 double wigner_harm_osc(double *x, double *p){
     return 1.0;
 }
 
+/*! Definition of initial density matrix element */
 double dens_init_0(double *x,double *p){
     double z;
     double g,gg;
@@ -498,8 +508,7 @@ double obs_3(double *x,double *p){
     return z;
 }
 
-/* These are the matrix elements of the Hamiltonian */
-
+/*! Matrix elements of the Hamiltonian */
 double H_0(double *x,double *p){
     double z;
     z = Hb(x,p) - dE(x)*0.5;

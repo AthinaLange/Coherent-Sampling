@@ -21,18 +21,11 @@ extern int SS2;
 extern int SS3;
 extern int counter;
 extern double TSLICE;
-extern double de;
-extern double alpha;
-extern double sina;
-extern double cosa;
-extern double Pdotdhat;
-extern double abs_d;
 
+double abs_d;
 
 extern double *RR;
 extern double *PP;
-extern double *dhat;
-extern double *Pperp;
 extern double *R1;
 extern double *v;
 extern double *m;
@@ -40,26 +33,11 @@ extern double *m;
 extern complex<double> z[4];
 extern int S[4];
 
-extern double (*www[2][4][4])();
-extern double (*phi)(double*, double*);
+double (*www[2][4][4])(double cosa, double sina, double de, double Pdotdhat);
 extern double (*dens_init[4])(double*, double*);
 extern double (*obs[4])(double*, double*);
 extern double (*obs1[4])(double*, double*);
 
-int signPdotdhat;
-double phase0 = 0.0;
-double p0;
-double p1;
-double p2;
-double p3;
-double ap0;
-double ap1;
-double ap2;
-double ap3;
-double dn2;
-double prob0;
-double prob1;
-int change;
 
 complex<double> I(0,1);
 extern complex<double> initd;
@@ -77,6 +55,34 @@ extern double *hargzsum1;
 // =============================================================================
 
 void process_path(PathInfo& path_info) {
+
+    int signPdotdhat;
+    double phase0 = 0.0;
+    double p0;
+    double p1;
+    double p2;
+    double p3;
+    double ap0;
+    double ap1;
+    double ap2;
+    double ap3;
+    double dn2;
+    double prob0;
+    double prob1;
+    int change;
+    double de;
+    double sina;
+    double cosa;
+    double Pdotdhat;
+    complex<double> initd(0,0);
+    initd = dens_init[SS3](R1,v);
+    double (*phi)(double*, double*);
+
+
+    double *dhat;
+    double *Pperp;
+    Pperp = new double[N_bath];
+    dhat = new double[N_bath];
 
     for (int i = 0; i < N_PATHS; ++i){
         if (i == path_info.surface){
@@ -130,9 +136,9 @@ void process_path(PathInfo& path_info) {
         }
 
         // Trotter-Suziki Approx. from exp(iJd) ===========================================
-        dd(RR); // non-adiabatic coupling matrix
+        dd(dhat, RR); // non-adiabatic coupling matrix
         de = dE(RR); // energy
-        alpha = 0.0;
+        double alpha = 0.0;
         Pdotdhat = 0;
         for (int i = 0; i < N_bath; ++i) {
             Pdotdhat += PP[i] * dhat[i]; //parallel component of dhat to momentum
@@ -149,10 +155,10 @@ void process_path(PathInfo& path_info) {
         cosa = cos(alpha);
 
         // Probability calculation ============================================
-        ap0 = fabs(p0 = ((www[1][SS0][0]() < -7775.0) ? 0.0 : www[0][SS0][0]()));
-        ap1 = fabs(p1 = ((www[1][SS0][1]() < -7775.0) ? 0.0 : www[0][SS0][1]()));
-        ap2 = fabs(p2 = ((www[1][SS0][2]() < -7775.0) ? 0.0 : www[0][SS0][2]()));
-        ap3 = fabs(p3 = ((www[1][SS0][3]() < -7775.0) ? 0.0 : www[0][SS0][3]()));
+        ap0 = fabs(p0 = ((www[1][SS0][0](cosa, sina, de, Pdotdhat) < -7775.0) ? 0.0 : www[0][SS0][0](cosa, sina, de, Pdotdhat)));
+        ap1 = fabs(p1 = ((www[1][SS0][1](cosa, sina, de, Pdotdhat) < -7775.0) ? 0.0 : www[0][SS0][1](cosa, sina, de, Pdotdhat)));
+        ap2 = fabs(p2 = ((www[1][SS0][2](cosa, sina, de, Pdotdhat) < -7775.0) ? 0.0 : www[0][SS0][2](cosa, sina, de, Pdotdhat)));
+        ap3 = fabs(p3 = ((www[1][SS0][3](cosa, sina, de, Pdotdhat) < -7775.0) ? 0.0 : www[0][SS0][3](cosa, sina, de, Pdotdhat)));
         dn2 = ap0 + ap1 + ap2 + ap3;
         double xx = dn2 * (gsl_rng_uniform(rr));   // choosing matrix elements
         //alpha goes to 0, pdotdhat very small, matrix becomes identiy and prob of jumping goes to 0
@@ -177,7 +183,9 @@ void process_path(PathInfo& path_info) {
             prob0 = ap3/dn2;
             prob1 = (ap0 + ap1 + ap2)/dn2;
         }
-
+        for (int i = 0; i < N_slice; ++i){
+            cout << i << "before jump" << abszsum1[i] << argzsum1[i]<< endl;
+        }
         // DECISION ============================================================================
 
         // ========================================================================
@@ -208,9 +216,9 @@ void process_path(PathInfo& path_info) {
 
             // Changing values for transition matrices ============================
 
-            if (www[1][SS0][SS1]() != 9999.0)
+            if (www[1][SS0][SS1](cosa, sina, de, Pdotdhat) != 9999.0)
                 for (int i = 0; i < N_bath; ++i)
-                    PP[i] = Pperp[i] + signPdotdhat * www[1][SS0][SS1]() * dhat[i];
+                    PP[i] = Pperp[i] + signPdotdhat * www[1][SS0][SS1](cosa, sina, de, Pdotdhat) * dhat[i];
 
             // Trotter-Suziki Approx. from exp(iLd/2) =============================
             phase0 = U(RR,PP,SS1,TSLICE*0.5); // exp(iLd/2) (after jump)
@@ -296,9 +304,9 @@ void process_path(PathInfo& path_info) {
 
          //   cout << "after 3rd propogator" << endl;
             for (int i = 0; i < N_PATHS; ++i) {
-                if (www[1][SS0][S[i]]() != 9999.0){
+                if (www[1][SS0][S[i]](cosa, sina, de, Pdotdhat) != 9999.0){
                     for (int j = 0; j < N_bath; ++j){
-                        PP[j] = Pperp[j] + signPdotdhat * www[1][SS0][S[i]]() * dhat[j];
+                        PP[j] = Pperp[j] + signPdotdhat * www[1][SS0][S[i]](cosa, sina, de, Pdotdhat) * dhat[j];
                     }
                 }
 
@@ -346,6 +354,7 @@ void process_path(PathInfo& path_info) {
         multi_paths_data[path_info.id].argzsum1[i] = argzsum1[i];
         multi_paths_data[path_info.id].habszsum1[i] = habszsum1[i];
         multi_paths_data[path_info.id].hargzsum1[i] = hargzsum1[i];
+        cout << i << abszsum1[i] << endl;
     }
 
     if ((path_info.Njump < N_JUMPS) &&  (counter < N_slice)) {
@@ -390,7 +399,7 @@ void process_path(PathInfo& path_info) {
     }
 
 
-
+    delete [] Pperp; delete [] dhat;
 
 
 }

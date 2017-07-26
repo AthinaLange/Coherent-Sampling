@@ -18,83 +18,63 @@ using namespace std;
 // VARIABLES ======================================================================
 
 char  datafilename[80];
-//FILE   *stream;
+FILE   *stream;
 
-const gsl_rng_type * TT;
+const gsl_rng_type * TT; /*!< Random Number Generator seed based on Gaussian Distribution */
 gsl_rng * rr;
 
 
-int N_bath;
-double ddd4;
-double ddd;
-double delta;
-double abs_d;
-double timestep;
-double Pdotdhat;
-double sina;
-double cosa;
-double de;
+int N_bath; /*!< Size of bath */
+int N_slice; /*!< Number of time intervals */
+int Ncut; /*!< Truncation parameter */
+double timestep; /*!< Size of time interval */
+int Nsample; /*!< Sample Size (No. of trees calculated) */
+double beta; /*!< Inverse Temperature */
+double delta; /*!< MD Integrating Timestep \f$ (\delta) \f$*/
+double ppower; /*!< */
+
+double ddd; /*!<  \f$ \delta^2 \f$ */
+double ddd4; /*!< \f$ \delta^2/4 \f$ */
+double *m; /*!< Mass of particles */
+double *c; /*!< */
+double *w; /*!< */
+double *f; /*!< Force on particles */
 double Njump;
 
-double *m;
-double *c;
-double *w;
-double *f;
-double *dhat;
-double *dgam;
-double *mww;
-double *sig;
+double *dgam; /*!< */
+double *mww; /*!< */
+double *sig; /*!< Sigma/Variance */
+double *mu; /*!< */
 double *RR;
 double *PP;
+double *R1;
+double *v;
+double *dtdtm;
+double TSLICE; /*!< Time per time interval*/
 
+extern double ranVector[10001];
 
-void (*force[4])(double *);
-double (*www[2][4][4])();
-
-// =======================================
-
-int  N_slice;
-int Nsample;
-int Ncut;
-double w_max;
-double eta;
-double T;
-double beta;
-int init_seed;
 int SS0;
 int SS1;
 int SS2;
 int SS3;
 int counter;
 complex<double> z[4] = {{1.0, 1.0}, {1.0, 1.0}, {1.0, 1.0}, {1.0, 1.0}};
-complex<double> initd(0,0);
 int S[4] = {0,0,0,0};
 
-double *Pperp;
-double *R1;
-double *v;
-double *mu;
-double *dtdtm;
-double TSLICE;
-double ppower;
-double alpha;
-
-double (*phi)(double*, double*);
+void (*force[4])(double *);
 double (*dens_init[4])(double*, double*);
 double (*obs[4])(double*, double*);
 double (*obs1[4])(double*, double*);
-
-
-extern double ranVector[10001];
 
 double *abszsum1;
 double *argzsum1;
 double *habszsum1;
 double *hargzsum1;
 
-// =============================================================================
-// Multi Path Processing Program
-// =============================================================================
+/// =============================================================================
+/// Multi Path Processing Program
+/// =============================================================================
 // 0 - 1 - 5  - 21
 //            - ...
 //       - 6
@@ -115,10 +95,44 @@ double *hargzsum1;
 // breath first processing
 
 int main() {
+    /*! Variables */
+    double w_max;
+    double eta;
+    double T;
+    int init_seed;
 
-    // ================================================================================================================
-    // INPUT
-    // ================================================================================================================
+    /// ================================================================================================================
+    /// Memory Allocation
+    /// ================================================================================================================
+    mww = new double[N_bath];
+    mu = new double[N_bath];
+    sig =  new double[2*N_bath];
+    dtdtm = new double[N_bath];
+    dgam = new double[N_bath];
+    R1 = new double[N_bath];
+    v = new double[N_bath];
+    f = new double[N_bath];
+    c = new double[N_bath];
+    m = new double[N_bath];
+    w = new double[N_bath];
+    RR = new double[N_bath];
+    PP = new double[N_bath];
+
+    abszsum1 = new double[N_slice];
+    argzsum1 = new double[N_slice];
+    habszsum1 = new double[N_slice];
+    hargzsum1 = new double[N_slice];
+    for (int i = 0; i < N_slice; ++i) {
+        abszsum1[i] = 0.0;
+        argzsum1[i] = 0.0;
+        habszsum1[i] = 0.0;
+        hargzsum1[i] = 0.0;
+
+    }
+
+    /// ================================================================================================================
+    /// SYSTEM INPUT
+    /// ================================================================================================================
 
     /* Initialize Stream - Scope 0
     cout << "Print information about new stream: "<< endl;
@@ -144,43 +158,20 @@ int main() {
     delta = 0.8;
     ppower = 100000;
 
-    // ================================================================================================================
-    // Memory Allocation
-    // ================================================================================================================
-    mww = new double[N_bath];
-    mu = new double[N_bath];
-    sig =  new double[2*N_bath];
-    dtdtm = new double[N_bath];
-    dgam = new double[N_bath];
-    dhat = new double[N_bath];
-    R1 = new double[N_bath];
-    v = new double[N_bath];
-    f = new double[N_bath];
-    c = new double[N_bath];
-    m = new double[N_bath];
-    w = new double[N_bath];
-    RR = new double[N_bath];
-    PP = new double[N_bath];
-    Pperp = new double[N_bath];
-
+    /*!< Sets up the use of a Gaussian Random Number Generator from GSL */
     gsl_rng_env_setup();
-
     TT = gsl_rng_default;
     rr = gsl_rng_alloc(TT);
 
-
-    // !!! Multi Paths Data
-    // dimension parameters
+    /*!< Sets up dimensions of MultiPathsData */
     long n_data1D= N_slice;
-    unsigned long n_paths = pow(N_PATHS, (N_LEVELS+1.0)) - 1;
-    cout << "max no. of paths " << n_paths << endl;
-
+    unsigned long n_paths = pow(N_PATHS, (N_LEVELS+1.0)) - 1; /*!< n_paths: maximum possible path segments */
 
     multi_paths_data.resize(n_paths, PathData(n_data1D));
-    // ================================================================================================================
-    // Initialization Values
-    // ================================================================================================================
 
+    ///////////////////////////////////////////////////////////////////////////////
+    /// INITIALIZATION OF SYSTEM
+    ///////////////////////////////////////////////////////////////////////////////
 
     dens_init[0] = dens_init_0; dens_init[1] = dens_init_1;
     dens_init[2] = dens_init_2; dens_init[3] = dens_init_3;
@@ -191,9 +182,8 @@ int main() {
     ddd =  delta*delta;
     TSLICE  = T/N_slice;
 
-    bath_para(eta,w_max);       /* compute system parameters etc */
+    bath_para(eta,w_max);       /*!< Defining Bath Parameters */
 
-    //  bath corresponds to eq. 53
     for (int i = 0; i < N_bath; ++i)
         mu[i] = beta*w[i]*0.5;
     for (int i = 0; i < N_bath; ++i){
@@ -204,37 +194,29 @@ int main() {
 
     for (int i = 0; i < N_bath; ++i)
         sig[i+N_bath] = 1.0*sqrt(w[i]/(2.0*tanh(mu[i])));
-    force[0] = F1;         /* assign pointers to force fields */
+    /*!< Defining force field */
+    force[0] = F1;
     force[1] = Fb;
     force[2] = Fb;
     force[3] = F2;
+
+
+    /*! Defining non-adiabatic coupling matrix */
     setwww();
 
-    abszsum1 = new double[N_slice];
-    argzsum1 = new double[N_slice];
-    habszsum1 = new double[N_slice];
-    hargzsum1 = new double[N_slice];
-    for (int i = 0; i < N_slice; ++i) {
-        abszsum1[i] = 0.0;
-        argzsum1[i] = 0.0;
-        habszsum1[i] = 0.0;
-        hargzsum1[i] = 0.0;
 
-    }
-
-
-    // ====================================================================================
-    // 1st OUTPUT
-    // ====================================================================================
+    /// ====================================================================================
+    /// 1st OUTPUT
+    /// ====================================================================================
     ofstream outputFile;
     outputFile.open("Filename.txt");
     outputFile << "w_max: " << w_max << ", eta: " << eta << ", beta: " << beta << ", delta: " << delta << ", ppower: " << ppower << ", N_bath: " << N_bath << ", N_slice: " << N_slice << endl;
     outputFile.close();
 
 
-    // ================================================================================================================
-    // Processing Path Segments
-    // ================================================================================================================
+    /// ================================================================================================================
+    /// PROCESSING TREE - MPI DIRECTION
+    /// ================================================================================================================
 
     // for loop needed iteratating 10,000 times (entire tree calculated for every particle)
 
@@ -261,15 +243,16 @@ int main() {
     else{
         SS3 = (SS0 = 3);
     }
-    z[SS0] = 4.0;
+
     for (int l = 0; l < N_bath; ++l){
         RR[l] = R1[l];
         PP[l] = v[l];
     }
     SS1 = SS0;
+    z[SS0] = 4.0;
     S[SS0] = SS1;
     counter = 0;
-    initd = dens_init[SS3](R1,v);
+
 
     // Enqueue root path information
     path_info_queue.emplace(PathInfo(-1, 0, S[SS0], z[SS0], 0, 0, 0));
@@ -348,7 +331,6 @@ int main() {
     delete [] sig;
     delete [] dtdtm;
     delete [] dgam;
-    delete [] dhat;
     delete [] R1;
     delete [] v;
     delete [] f;
@@ -357,7 +339,6 @@ int main() {
     delete [] w;
     delete [] RR;
     delete [] PP;
-    delete [] Pperp;
 
     delete [] abszsum1;
     delete [] argzsum1;
