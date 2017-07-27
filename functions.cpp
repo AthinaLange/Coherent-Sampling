@@ -2,9 +2,9 @@
 
 using namespace std;
 
-///////////////////////////////////////////////////////////////////////////////
-/// VARIABLES
-///////////////////////////////////////////////////////////////////////////////
+// =========================================================================
+// VARIABLES
+// =========================================================================
 
 extern int N_bath;
 extern double ddd;
@@ -20,13 +20,12 @@ extern double *m;
 extern double *w;
 
 
-extern double (*www[2][4][4])(double cosa, double sina, double de, double Pdotdhat);
-
+extern double (* www[2][4][4])(double cosa, double sina, double de, double Pdotdhat);
 extern void (*force[4])(double *);
 
-///////////////////////////////////////////////////////////////////////////////
-/// FUNCTIONS
-///////////////////////////////////////////////////////////////////////////////
+// =========================================================================
+// FUNCTIONS
+// =========================================================================
 
 double gam(double *R){
     double x = 0.0;
@@ -38,39 +37,33 @@ double gam(double *R){
     return -x;
 }
 
-/*! Bath Hamiltonian */
-double Hb(double *R, double *P){
+double Hb(double *R, double *P){ /* Bath Hamiltonian */
     double x = 0.0;
     for (int i = 0; i < N_bath; ++i)
         x += P[i]*P[i] - mww[i]*R[i]*R[i];
     return x*0.5;
 }
 
-/*! Derivative of gam */
 void dgamma(double *R){
     for (int i = 0; i < N_bath; ++i)
         dgam[i] = -c[i];
 }
 
-/*! Pure Bath Force Field */
-void Fb(double *R){
-    double x;
+void Fb(double *R){ /* Pure Bath Force Field */
     for (int i= 0; i < N_bath; ++i)
         f[i] = mww[i]*R[i];
 }
 
-/*! 00 force field */
-void F1(double *R){
+void F1(double *R){ /* 00 force field   */
     double g,h;
     g = gam(R);
     h = g/sqrt(ddd4 + g*g);
     for (int i = 0; i < N_bath; ++i){
-        f[i]  = mww[i]*R[i] - h*c[i];
+        f[i]  = mww[i]*R[i] -  h*c[i];
     }
 }
 
-/*! 11 force field */
-void F2(double *R){
+void F2(double *R){ /* 11 force field */
     double g,h;
     g = gam(R);
     h = g/sqrt(ddd4 + g*g);
@@ -78,14 +71,12 @@ void F2(double *R){
         f[i] = mww[i]*R[i] + h*c[i];
 }
 
-/*! Energy difference between adiabatic surface (E1 - E0) */
-double dE(double *R){
+double dE(double *R){ /* Energy difference between adibiatic surface (E1 - E0) */
     double g;
     g = gam(R);
     g *= 4.0*g;
     return (sqrt(ddd + g));
 }
-
 
 double G(double *R){
     double x,g;
@@ -96,8 +87,7 @@ double G(double *R){
     return x;
 }
 
-/*! Energy */
-void dd(double *dhat, double *R){
+void dd(double *dhat, double*R){
     double x1,x2,x3;
     int i;
     x2 = gam(R);
@@ -118,8 +108,7 @@ void dd(double *dhat, double *R){
         dhat[i] /= abs_d;
 }
 
-/*! Velocity Verlet */
-void integ_step(double *r, double *v, double dt, int Sa){
+void integ_step(double *r, double *v, double dt, int Sa){ // Velocity Verlet
     double y;
     y = 0.5*dt*dt;
     for (int i = 0; i < N_bath; ++i)
@@ -132,8 +121,7 @@ void integ_step(double *r, double *v, double dt, int Sa){
         v[i] += y*f[i];
 }
 
-/*! Parameters for bath (corresponding to an ohmic spectral density) */
-void bath_para(double eta, double w_max){
+void bath_para(double eta, double w_max){ /* Parameters for bath (corresponding to an ohmic spectral density) */
     double w_0;
     w_0 = (1 - exp(-w_max))/N_bath;
     for (int i = 0; i < N_bath; ++i){
@@ -143,10 +131,9 @@ void bath_para(double eta, double w_max){
     }
 }
 
-/*! Adiabatic Propagator */
-double U( double *r,double *v, int Sa, double t){
-    double  dE0, phase,dt,x1,x2,x3,v1,v2,v3;
-    int Nsteps;
+double U( double *r,double *v, int Sa, double t){ // Adiabatic Propagator
+    double phase, dt;
+    double Nsteps;
 
     force[Sa](r);
     dt = timestep;
@@ -180,13 +167,10 @@ double U( double *r,double *v, int Sa, double t){
     return phase;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-/// TRANSITION MATRIX
-///////////////////////////////////////////////////////////////////////////////
+// TRANSITION MATRIX ===========================================================
 
 
 /* Q1 */
-
 
 double wwa0_00(double cosa, double sina, double de, double Pdotdhat){
     double x;
@@ -388,7 +372,6 @@ double wwa1_33(double cosa, double sina, double de, double Pdotdhat){
     return 9999.0;
 }
 
-/*! Non-adiabatic Coupling Matrix */
 void setwww(){
 
     // W_{a0}
@@ -434,16 +417,16 @@ void setwww(){
 
 /* ______________________________________   */
 
-///////////////////////////////////////////////////////////////////////////////
-/// Observables and initial density Matrices
-///////////////////////////////////////////////////////////////////////////////
+/* ************** Observables and initial density Matrices *********  */
+
+
+/* Definition of initial density matrix element */
 
 
 double wigner_harm_osc(double *x, double *p){
     return 1.0;
 }
 
-/*! Definition of initial density matrix element */
 double dens_init_0(double *x,double *p){
     double z;
     double g,gg;
@@ -508,7 +491,8 @@ double obs_3(double *x,double *p){
     return z;
 }
 
-/*! Matrix elements of the Hamiltonian */
+/* These are the matrix elements of the Hamiltonian */
+
 double H_0(double *x,double *p){
     double z;
     z = Hb(x,p) - dE(x)*0.5;

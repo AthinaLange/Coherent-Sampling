@@ -5,9 +5,9 @@
 PathInfoQueue_t  path_info_queue;
 PathDataVector_t multi_paths_data;
 
-// =============================================================================
-// VARIABLES
-// =============================================================================
+///////////////////////////////////////////////////////////////////////////////
+/// VARIABLES
+///////////////////////////////////////////////////////////////////////////////
 extern const gsl_rng_type * TT;
 extern gsl_rng * rr;
 
@@ -38,16 +38,10 @@ extern double (*dens_init[4])(double*, double*);
 extern double (*obs[4])(double*, double*);
 extern double (*obs1[4])(double*, double*);
 
-
-complex<double> I(0,1);
-extern complex<double> initd;
-
 extern double *abszsum1;
 extern double *argzsum1;
 extern double *habszsum1;
 extern double *hargzsum1;
-
-
 
 
 // =============================================================================
@@ -56,6 +50,9 @@ extern double *hargzsum1;
 
 void process_path(PathInfo& path_info) {
 
+    ///////////////////////////////////////////////////////////////////////////////
+    /// VARIABLES
+    ///////////////////////////////////////////////////////////////////////////////
     int signPdotdhat;
     double phase0 = 0.0;
     double p0;
@@ -70,74 +67,68 @@ void process_path(PathInfo& path_info) {
     double prob0;
     double prob1;
     int change;
+    double (*phi)(double*, double*);
+    complex<double> I(0,1);
+    complex<double> initd(0,0);
+    initd = dens_init[SS3](R1,v);
+    double *dhat;
+    double *Pperp;
+    dhat = new double[N_bath];
+    Pperp = new double[N_bath];
+
     double de;
     double sina;
     double cosa;
     double Pdotdhat;
-    complex<double> initd(0,0);
-    initd = dens_init[SS3](R1,v);
-    double (*phi)(double*, double*);
 
-
-    double *dhat;
-    double *Pperp;
-    Pperp = new double[N_bath];
-    dhat = new double[N_bath];
-
+    /*!< Giving the surfaces starting phase factor*/
     for (int i = 0; i < N_PATHS; ++i){
-        if (i == path_info.surface){
+        if (i == path_info.surface){ /*!< Current surface is given stored phase factor */
             z[i]=path_info.probability;
         }
-        else{
+        else{ /*!< Otherwise set to 1(dummy) */
             z[i] = {1.0,1.0};
         }
     }
 
+    change = 0; /*!< Condition to check if jump completed or not, if so, exiting for loop*/
     cout << endl;
     cout << "------------------------------------------------------------------------" << endl;
     cout << "Process Path " << path_info.id << " (level " << path_info.level << " )" << endl;
-    change = 0; // start loop calculation
-    counter = path_info.clock;
 
-    // Read ancestors PathData
+    counter = path_info.clock; /*!< Counter is given the current clock time */
+
+    /*!< Ancestor of path segment is read */
     long ancestor_id = path_info.parent_id;
     while (ancestor_id >= 0) { // root path id is 0, parent of root path id is -1
         cout << "ancestor: " << ancestor_id << endl;
-        // How to access PathData
-        // multi_paths_data[ancestor_id].valid ... always valid
-        // multi_paths_data[ancestor_id].parent_id
-        // multi_paths_data[ancestor_id].data1D[i]
-        // multi_paths_data[ancestor_id].data2D[i][j]
         ancestor_id = multi_paths_data[ancestor_id].parent_id; // next ancestor
     }
 
+    ///////////////////////////////////////////////////////////////////////////////
+    /// PHASE SPACE CALCULATION
+    ///////////////////////////////////////////////////////////////////////////////
 
-    // =========================================================================
-    // Phase Space Calculation
-    // =========================================================================
 
-    while (change == 0 && counter < N_slice){
-        cout << "Stored Inital Surface Value " <<path_info.surface << endl;
-        SS0 = path_info.surface; // Put new surface as 'original' surface
+    while (change == 0 && counter < N_slice){ /*!< While loop iterates until jump, or time runs out */
+        //cout << "Stored Inital Surface Value " <<path_info.surface << endl;
+        //SS0 = path_info.surface; /*!< Initial surface value is pulled from PathInfo */
 
-        cout << "Counter: " << counter << endl;
+        //cout << "Counter: " << counter << endl;
 
-        //cout << "Starting z" << endl;
-        for (int i = 0; i < N_PATHS;++i){
-         //   cout << z[i] << endl;
-        }
-        // Trotter-Suziki Approx. from exp(iLd/2) =========================================
-        phase0 = U(RR, PP, SS0, TSLICE*0.5);
+        ///////////////////////////////////////////////////////////////////////////////
+        /// ADIABATIC PROPAGATOR
+        ///////////////////////////////////////////////////////////////////////////////
+        phase0 = U(RR, PP, SS0, TSLICE*0.5); // exp(iLd/2) (before jump)
         z[SS0] *= exp(I * phase0);
 
-       // cout << "1st propogator: surface: " << SS0 << endl;
-        for (int i = 0; i < N_PATHS;++i){
-          //  cout << z[i] << endl;
-        }
 
-        // Trotter-Suziki Approx. from exp(iJd) ===========================================
-        dd(dhat, RR); // non-adiabatic coupling matrix
-        de = dE(RR); // energy
+
+        ///////////////////////////////////////////////////////////////////////////////
+        /// NON-ADIABATIC PROPAGATOR
+        ///////////////////////////////////////////////////////////////////////////////
+        dd(dhat, RR); /*!< calculating non-adiabatic coupling matrix */
+        de = dE(RR); /*!< calculating energy */
         double alpha = 0.0;
         Pdotdhat = 0;
         for (int i = 0; i < N_bath; ++i) {
@@ -154,7 +145,7 @@ void process_path(PathInfo& path_info) {
         sina = sin(alpha);
         cosa = cos(alpha);
 
-        // Probability calculation ============================================
+        /*!< Importance Sampling - non-adiabatic coupling matrix gives probabilities */
         ap0 = fabs(p0 = ((www[1][SS0][0](cosa, sina, de, Pdotdhat) < -7775.0) ? 0.0 : www[0][SS0][0](cosa, sina, de, Pdotdhat)));
         ap1 = fabs(p1 = ((www[1][SS0][1](cosa, sina, de, Pdotdhat) < -7775.0) ? 0.0 : www[0][SS0][1](cosa, sina, de, Pdotdhat)));
         ap2 = fabs(p2 = ((www[1][SS0][2](cosa, sina, de, Pdotdhat) < -7775.0) ? 0.0 : www[0][SS0][2](cosa, sina, de, Pdotdhat)));
@@ -162,11 +153,10 @@ void process_path(PathInfo& path_info) {
         dn2 = ap0 + ap1 + ap2 + ap3;
         double xx = dn2 * (gsl_rng_uniform(rr));   // choosing matrix elements
         //alpha goes to 0, pdotdhat very small, matrix becomes identiy and prob of jumping goes to 0
-
         //cout << "Prob:" << "ap0: " << ap0 <<" ap1: "<< ap1 <<" ap2: " << ap2 <<" ap3: "<< ap3 << endl;
         SS2 = SS0;
 
-        // Probability Weighting ==============================================
+       /*!< Probability Weighting - probability of various surfaces calculated */
         if (SS0 == 0){
             prob0 = ap0/dn2;
             prob1 = (ap1 + ap2 + ap3)/dn2;
@@ -183,19 +173,24 @@ void process_path(PathInfo& path_info) {
             prob0 = ap3/dn2;
             prob1 = (ap0 + ap1 + ap2)/dn2;
         }
-        for (int i = 0; i < N_slice; ++i){
-            cout << i << "before jump" << abszsum1[i] << argzsum1[i]<< endl;
-        }
-        // DECISION ============================================================================
 
-        // ========================================================================
-        // NO JUMP
-        // ========================================================================
+        ///////////////////////////////////////////////////////////////////////////////
+        /// DECISION - NOT OR JUMP
+        ///////////////////////////////////////////////////////////////////////////////
 
-        if (xx < prob0){
+        // ==========================================================================
+        // ==========================================================================
+        // ==========================================================================
+
+        ///////////////////////////////////////////////////////////////////////////////
+        /// NO JUMP - PROPOGATES ADIABATICALLY
+        ///////////////////////////////////////////////////////////////////////////////
+
+        if (xx < prob0){ /*!< if random number less than probability of propagating adiabatically, stay on surface */
             SS1 = SS0;
            // cout << "Propogating Adiabatically" << endl;
             S[SS1] = SS1;
+            /*!< Assign value of phase factor to 'new' surface */
             if (SS1 == 0){
                 z[SS1] *= p0;
             }
@@ -208,50 +203,44 @@ void process_path(PathInfo& path_info) {
             else {
                 z[SS1] *= p3;
             }
-           // cout << "after jump propogator: SS1: " << SS1 << endl;
-            for (int i = 0; i < N_PATHS;++i){
-            //    cout << z[i] << endl;
-            }
-            path_info.surface = SS1;
 
-            // Changing values for transition matrices ============================
+            path_info.surface = SS1; /*!< Set 'new' surface value into the surface spot of PathInfo */
 
-            if (www[1][SS0][SS1](cosa, sina, de, Pdotdhat) != 9999.0)
+            if (www[1][SS0][SS1](cosa, sina, de, Pdotdhat) != 9999.0) /*! updating momentum values */
                 for (int i = 0; i < N_bath; ++i)
                     PP[i] = Pperp[i] + signPdotdhat * www[1][SS0][SS1](cosa, sina, de, Pdotdhat) * dhat[i];
 
-            // Trotter-Suziki Approx. from exp(iLd/2) =============================
+
+            ///////////////////////////////////////////////////////////////////////////////
+            /// ADIABATIC PROPAGATOR
+            ///////////////////////////////////////////////////////////////////////////////
             phase0 = U(RR,PP,SS1,TSLICE*0.5); // exp(iLd/2) (after jump)
             z[SS1] *= exp(I*phase0);
-           // cout << "after 3rd propogator: " << endl;
-            for (int i = 0; i < N_PATHS;++i){
-           //     cout << z[i] << endl;
-            }
-         /*   for (int i = 0; i < N_PATHS; ++i){
-                cout << "Probabilities for each surface "<< i << ": " << z[i] << endl;
-            }*/
-            // Calculating new phase space points =================================
-            phi = obs[SS1];
+
+
+            ///////////////////////////////////////////////////////////////////////////////
+            /// CALCULATING SUM VALUES FOR EVERY TIME INTERVAL (Solving Integral for Observable and Initial Density)
+            ///////////////////////////////////////////////////////////////////////////////
+            phi = obs[SS1];  /*!< Observable 1 function */
             abszsum1[counter]  += real(z[SS1]*phi(RR,PP)*initd);
             argzsum1[counter]  += imag(z[SS1]*phi(RR,PP)*initd);
 
-            phi = obs1[SS1];
+            phi = obs1[SS1]; /*!< Observable 2 (Hamiltonian) function */
             habszsum1[counter]  += real(z[SS1]*phi(RR,PP)*initd);
             hargzsum1[counter]  += imag(z[SS1]*phi(RR,PP)*initd);
-            cout << endl;
-
+            //cout << endl;
             }
 
-
-            // ========================================================================
-            // POSSIBLE JUMP
-            // ========================================================================
+            ///////////////////////////////////////////////////////////////////////////////
+            /// POSSIBLE JUMP
+            ///////////////////////////////////////////////////////////////////////////////
         else{
-            change = 1; // Has changed surface
-            Njump++;
+            change = 1; /*!< Change exit condition of for loop - path segment ended */
+            Njump++; /*!< Increase jump counter */
            // cout << "Jump Possible" << endl;
-          //  cout << "Propability Adiabatic: " << prob0 << ", Probability Jump: " << prob1 << endl;
+          //  cout << "Probability Adiabatic: " << prob0 << ", Probability Jump: " << prob1 << endl;
 
+            /*!< Depending on which initial surface had been chosen, phase factor of all surfaces updated accordingly*/
             if (SS0 == 0){
                 S[0] = 0;
                 S[1] = 1;
@@ -292,114 +281,89 @@ void process_path(PathInfo& path_info) {
                 z[2] *= p2/prob1;
                 z[3] *= p3;
             }
-           // cout << "after jump propogator" << endl;
-            for (int i = 0; i < N_PATHS;++i){
-            //    cout << z[i] << endl;
-            }
 
-        /*    for (int k = 0; k < N_PATHS; ++k){
-                cout << "Probabilities for each surface "<< k << ": " << z[k] << endl;
-            }*/
-            // need to fix probabilities index
 
-         //   cout << "after 3rd propogator" << endl;
+            ///////////////////////////////////////////////////////////////////////////////
+            /// IF JUMP: PROPAGATE ALONG NEW SURFACE AND CALCULATE SUM
+            ///////////////////////////////////////////////////////////////////////////////
             for (int i = 0; i < N_PATHS; ++i) {
-                if (www[1][SS0][S[i]](cosa, sina, de, Pdotdhat) != 9999.0){
+                if (www[1][SS0][S[i]](cosa, sina, de, Pdotdhat) != 9999.0){ /*! updating momentum values */
                     for (int j = 0; j < N_bath; ++j){
                         PP[j] = Pperp[j] + signPdotdhat * www[1][SS0][S[i]](cosa, sina, de, Pdotdhat) * dhat[j];
                     }
                 }
 
-                // Trotter-Suziki Approx. from exp(iLd/2) ========================================
+                ///////////////////////////////////////////////////////////////////////////////
+                /// ADIABATIC PROPAGATOR
+                ///////////////////////////////////////////////////////////////////////////////
                 phase0 = U(RR, PP, S[i], TSLICE * 0.5); // exp(iLd/2) (after jump)
                 z[S[i]] *= exp(I * phase0);
 
 
-                // Calculating new phase space points =================================
-                phi = obs[SS1];
+                ///////////////////////////////////////////////////////////////////////////////
+                /// CALCULATING SUM VALUES FOR EVERY TIME INTERVAL (Solving Integral for Observable and Initial Density)
+                ///////////////////////////////////////////////////////////////////////////////
+                phi = obs[SS1]; /*!< Observable 1 function */
                 abszsum1[counter]  += real(z[SS1]*phi(RR,PP)*initd);
                 argzsum1[counter]  += imag(z[SS1]*phi(RR,PP)*initd);
 
-                phi = obs1[SS1];
+                phi = obs1[SS1]; /*!< Observable 2 (Hamiltonian) function */
                 habszsum1[counter]  += real(z[SS1]*phi(RR,PP)*initd);
                 hargzsum1[counter]  += imag(z[SS1]*phi(RR,PP)*initd);
                 }
-            counter++;
+            counter++; /*!< increase time interval counter */
             break;
         }
 
         counter++;
     } ;
 
-    // =======================================================================================================
+    ///////////////////////////////////////////////////////////////////////////////
+    /// WRITE PATH SEGMENT DATA INTO PathData
+    ///////////////////////////////////////////////////////////////////////////////
 
-
-    // Write PathData
     cout << "writing" << endl;
 
-    path_info.clock = counter;
+    path_info.clock = counter; /*!< Place current time interval into clock counter*/
 
-    multi_paths_data[path_info.id].valid = true;
-    multi_paths_data[path_info.id].parent_id = path_info.parent_id;
+    multi_paths_data[path_info.id].valid = true; /*!< Set path segment as having been completed */
+    multi_paths_data[path_info.id].parent_id = path_info.parent_id; /*!< Assign parent's ID */
     for (int i = 0; i < N_PATHS; ++i){
-        multi_paths_data[path_info.id].probability[i] = z[i];
-        multi_paths_data[path_info.id].surface[i] = S[i];
+        multi_paths_data[path_info.id].probability[i] = z[i]; /*!< Place calculated phase factors into vector */
+        multi_paths_data[path_info.id].surface[i] = S[i]; /*!< Place surface values into vector */
     }
 
-    /* for (long i=0; i< multi_paths_data[path_info.id].n_data1D; ++i) {
-         multi_paths_data[path_info.id].data1D[i] = path_info.id;
-     }*/
-    for (int i = 0; i < N_slice; ++i) {
+    for (int i = 0; i < multi_paths_data[path_info.id].n_data1D; ++i) { /*!< Set new version of sum1 into Path's matrix*/
         multi_paths_data[path_info.id].abszsum1[i] = abszsum1[i];
         multi_paths_data[path_info.id].argzsum1[i] = argzsum1[i];
         multi_paths_data[path_info.id].habszsum1[i] = habszsum1[i];
         multi_paths_data[path_info.id].hargzsum1[i] = hargzsum1[i];
-        cout << i << abszsum1[i] << endl;
     }
 
-    if ((path_info.Njump < N_JUMPS) &&  (counter < N_slice)) {
+    ///////////////////////////////////////////////////////////////////////////////
+    /// CREATING CHILDREN
+    ///////////////////////////////////////////////////////////////////////////////
 
-        // Calculate the following paths ids using a formula (vs. using a shared counter)
-        // to avoid synchronization between parallel executions of process_path().
-        // lowest path id in current level
+    if ((path_info.Njump < N_JUMPS) &&  (counter < N_slice)) { /*!< If jump counter or time counter not at cut-off, spawn and create children paths(ID's) */
+
+        /*!< Calculate children's path ID's */
         long id_min_level = 0;
-        for (int l=0; l<path_info.level; ++l) id_min_level += pow(N_PATHS, l);
-        // lowest path id in next level
-        long id_min_next_level = id_min_level + pow(N_PATHS, path_info.level);
-        // first path id of following paths in next level
-        long path_id = id_min_next_level + (path_info.id - id_min_level)*N_PATHS;
+        for (int l=0; l<path_info.level; ++l)
+            id_min_level += pow(N_PATHS, l);
+        long id_min_next_level = id_min_level + pow(N_PATHS, path_info.level); // lowest path ID in next level
+        long path_id = id_min_next_level + (path_info.id - id_min_level)*N_PATHS; // first path ID of following paths in next level
 
-
-        // Enqueue path following paths information
-        //for (long p=0; p<(N_PATHS); ++p) {=
-        // Random Number Generator
-        // new random states based on different seeds create with random state from current path
-        //unsigned long seed = path_info.random_state.uniform_int(0, path_info.random_state.MAX_INT);
-        //cout << "Child Seed " << p << ": " << seed << endl;
-        //RandomState random_state = RandomState(seed);
-        //path_info_queue.emplace(PathInfo(path_info.id, path_id + p, S[p], z[p] path_info.level + 1, Njump+1, counter/*, random_state*/));
-        // (parent_id, id, level, clock, random_state)
-        //}
-        // Pass on random state from current path to one of the following paths
-        // after the random state has been used to generate new seeds for the following paths
-        // to make sure that different seeds are generated in the following path.
-        //path_info_queue.emplace(PathInfo(path_info.id, path_id + (N_PATHS-1), path_info.level+1, Njump, counter, path_info.random_state));
-        // (parent_id, id, level, clock, random_state)
         cout << "Children paths created:"<< endl;
-        for (int p = 0; p < N_PATHS; ++p){
+        for (int p = 0; p < N_PATHS; ++p){ /*!< Place children's PathInfo into queue to be processed */
             cout << path_id + p << endl;
-            if (S[p] == SS0){
+            if (S[p] == SS0){ /*!< If adiabatically propagated surface after jump, stored jump counter does not increase */
                 path_info_queue.emplace(PathInfo(path_info.id, path_id + p, S[p], z[p], path_info.level + 1, Njump, counter));
             }
-            else{
+            else{ /*!< If a different surface than initial, stored jump counter increased */
                 path_info_queue.emplace(PathInfo(path_info.id, path_id + p, S[p], z[p], path_info.level + 1, Njump + 1, counter));
             }
-
         }
     }
 
-
-    delete [] Pperp; delete [] dhat;
-
-
+    delete [] dhat; delete [] Pperp;
 }
