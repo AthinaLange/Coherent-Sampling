@@ -251,6 +251,7 @@ int main() {
         SS1 = SS0;
         z[SS0] = 4.0; /*!< Setting phase factor of initial surface to 4 */
         S[SS0] = SS1;
+        /*!< Resets time counter and jump counter to 0 for every tree */
         counter = 0; /*!< Setting interval counter to 0 */
         Njump = 0;
 
@@ -309,9 +310,8 @@ int main() {
     outputFile.open("Filename.txt");
     outputFile << "timestep: " << timestep << ", T: " << T << ", Nsample: " << Nsample << endl;
     for (int i = 0; i < N_slice; ++i){
-        outputFile << "Njump: " << i <<  ", " << TSLICE*(i+1) <<"     " << abszsum1[i] << "   " << argzsum1[i] << "   " << habszsum1[i] <<"   " << hargzsum1[i] << endl;
-        cout << "Njump: " << i <<  ", " << TSLICE*(i+1) << "     " << abszsum1[i] << "   " << argzsum1[i] << "   " << habszsum1[i] <<"   " << hargzsum1[i] << endl;
-
+        outputFile << "Njump: " << i <<  ", " << TSLICE*(i+1) <<"     " << abszsum1[i]/Nsample << "   " << argzsum1[i]/Nsample /*<< "   " << habszsum1[i]/Nsample <<"   " << hargzsum1[i]/Nsample */<< endl;
+        cout << "Njump: " << i <<  ", " << TSLICE*(i+1) << "     " << abszsum1[i]/Nsample << "   " << argzsum1[i]/Nsample /*<< "   " << habszsum1[i]/Nsample <<"   " << hargzsum1[i]/Nsample */<< endl;
     }
     outputFile.close();
 

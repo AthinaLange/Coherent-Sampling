@@ -92,8 +92,8 @@ void process_path(PathInfo& path_info) {
     }
 
     change = 0; /*!< Condition to check if jump completed or not, if so, exiting for loop*/
-    cout << endl;
-    cout << "------------------------------------------------------------------------" << endl;
+    //cout << endl;
+    cout << "-------------------------" << endl;
     cout << "Process Path " << path_info.id << " (level " << path_info.level << " )" << endl;
 
     counter = path_info.clock; /*!< Counter is given the current clock time */
@@ -101,7 +101,7 @@ void process_path(PathInfo& path_info) {
     /*!< Ancestor of path segment is read */
     long ancestor_id = path_info.parent_id;
     while (ancestor_id >= 0) { // root path id is 0, parent of root path id is -1
-        cout << "ancestor: " << ancestor_id << endl;
+        //cout << "ancestor: " << ancestor_id << endl;
         ancestor_id = multi_paths_data[ancestor_id].parent_id; // next ancestor
     }
 
